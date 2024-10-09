@@ -253,7 +253,13 @@ def get_starting_nodes(graph: DiGraph) -> List[str]:
     :param graph: (nx.DiGraph) A directed graph object
     :return: (list) A list of all nodes without predecessors
     """
-    pass
+    no_pred = []
+    for node in graph.nodes():
+        if any(True for _ in graph.predecessors(node)):
+            continue
+        else:
+            no_pred.append(node)
+    return no_pred
 
 
 def get_sink_nodes(graph: DiGraph) -> List[str]:
@@ -262,7 +268,13 @@ def get_sink_nodes(graph: DiGraph) -> List[str]:
     :param graph: (nx.DiGraph) A directed graph object
     :return: (list) A list of all nodes without successors
     """
-    pass
+    no_succ = []
+    for node in graph.nodes():
+        if any(True for _ in graph.successors(node)):
+            continue
+        else:
+            no_succ.append(node)
+    return no_succ
 
 
 def get_contigs(
@@ -275,7 +287,19 @@ def get_contigs(
     :param ending_nodes: (list) A list of nodes without successors
     :return: (list) List of [contiguous sequence and their length]
     """
-    pass
+    paths = ()
+    contigs = ()
+    for start in starting_nodes:
+        for end in ending_nodes:
+            if has_path(graph, start, end):
+                for path in all_simple_paths(graph, start, end):
+                    paths += (path,)
+    for path in paths:
+        contig = path[0]
+        for i in range(1, len(path)):
+            contig += path[i][-1]
+        contigs += ((contig, len(contig)),)
+    return contigs
 
 
 def save_contigs(contigs_list: List[str], output_file: Path) -> None:
@@ -284,7 +308,13 @@ def save_contigs(contigs_list: List[str], output_file: Path) -> None:
     :param contig_list: (list) List of [contiguous sequence and their length]
     :param output_file: (Path) Path to the output file
     """
-    pass
+    with open(output_file, mode='w') as f_out:
+        contig_n = 0
+        for contig in contigs_list:
+            f_out.write(f">contig_{contig_n} len={contig[1]}\n")
+            f_out.write(textwrap.fill(contig[0], width=80))
+            f_out.write(f"\n")
+            contig_n += 1
 
 
 def draw_graph(graph: DiGraph, graphimg_file: Path) -> None:  # pragma: no cover
@@ -322,6 +352,15 @@ def main() -> None:  # pragma: no cover
     """
     # Get arguments
     args = get_arguments()
+    file_in = args.fastq_file
+    kmer_size = args.kmer_size
+    file_out = args.output_file
+    kmer_dict = build_kmer_dict(file_in, kmer_size)
+    graph = build_graph(kmer_dict)
+    starting_nodes = get_starting_nodes(graph)
+    ending_nodes = get_sink_nodes(graph)
+    contigs = get_contigs(graph, starting_nodes, ending_nodes)
+    save_contigs(contigs, file_out)
 
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit

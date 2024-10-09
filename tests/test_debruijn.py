@@ -122,7 +122,8 @@ def test_get_contigs(global_data):
 
 def test_save_contigs(global_data):
     test_file = Path(__file__).parent / "test.fna"
-    contig = [("TCAGCGAT", 8), ("TCAGCGAA", 8), ("ACAGCGAT", 8), ("ACAGCGAA", 8)]
+    contig = [("TCAGCGAT", 8), ("TCAGCGAA", 8),
+              ("ACAGCGAT", 8), ("ACAGCGAA", 8)]
     save_contigs(contig, test_file)
     with test_file.open("rb") as contig_test:
         assert (
@@ -177,7 +178,8 @@ def test_select_best_path(global_data):
     assert (3, 2) in graph_1.edges()
     assert 1 not in graph_1.nodes()
     graph_2 = nx.DiGraph()
-    graph_2.add_edges_from([(1, 2), (3, 2), (2, 4), (4, 5), (5, 6), (5, 7), (7, 8)])
+    graph_2.add_edges_from(
+        [(1, 2), (3, 2), (2, 4), (4, 5), (5, 6), (5, 7), (7, 8)])
     graph_2 = select_best_path(
         graph_2, [[5, 6], [5, 7, 8]], [1, 2], [13, 10], delete_sink_node=True
     )
@@ -191,7 +193,8 @@ def test_select_best_path(global_data):
     graph_3.add_edges_from(
         [(1, 2), (3, 2), (2, 4), (4, 5), (2, 8), (8, 9), (9, 5), (5, 6), (5, 7)]
     )
-    graph_3 = select_best_path(graph_3, [[2, 4, 5], [2, 8, 9, 5]], [1, 4], [13, 10])
+    graph_3 = select_best_path(
+        graph_3, [[2, 4, 5], [2, 8, 9, 5]], [1, 4], [13, 10])
     assert (2, 8) not in graph_3.edges()
     assert (8, 9) not in graph_3.edges()
     assert (9, 5) not in graph_3.edges()
@@ -206,7 +209,8 @@ def test_select_best_path(global_data):
     graph_4.add_edges_from(
         [(1, 2), (3, 2), (2, 4), (4, 5), (2, 8), (8, 9), (9, 5), (5, 6), (5, 7)]
     )
-    graph_4 = select_best_path(graph_4, [[2, 4, 5], [2, 8, 9, 5]], [1, 4], [10, 10])
+    graph_4 = select_best_path(
+        graph_4, [[2, 4, 5], [2, 8, 9, 5]], [1, 4], [10, 10])
     assert (2, 4) not in graph_4.edges()
     assert (4, 5) not in graph_4.edges()
     assert (2, 8) in graph_4.edges()
@@ -217,7 +221,8 @@ def test_select_best_path(global_data):
     graph_5.add_edges_from(
         [(1, 2), (3, 2), (2, 4), (4, 5), (2, 8), (8, 9), (9, 5), (5, 6), (5, 7)]
     )
-    graph_5 = select_best_path(graph_5, [[2, 4, 5], [2, 8, 9, 5]], [1, 4], [10, 10])
+    graph_5 = select_best_path(
+        graph_5, [[2, 4, 5], [2, 8, 9, 5]], [1, 4], [10, 10])
     global_data.grade += 4
 
 
@@ -305,7 +310,8 @@ def test_simplify_bubbles(global_data):
 
 def test_solve_entry_tips(global_data):
     graph_1 = nx.DiGraph()
-    graph_1.add_weighted_edges_from([(1, 2, 10), (3, 2, 2), (2, 4, 15), (4, 5, 15)])
+    graph_1.add_weighted_edges_from(
+        [(1, 2, 10), (3, 2, 2), (2, 4, 15), (4, 5, 15)])
     graph_1 = solve_entry_tips(graph_1, [1, 3])
     assert (3, 2) not in graph_1.edges()
     assert (1, 2) in graph_1.edges()
