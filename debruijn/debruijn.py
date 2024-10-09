@@ -13,6 +13,11 @@
 
 """Perform assembly based on debruijn graph."""
 
+from typing import Iterator, Dict, List
+import matplotlib.pyplot as plt
+import textwrap
+import statistics
+from random import randint
 import argparse
 import os
 import sys
@@ -29,23 +34,19 @@ from networkx import (
 import matplotlib
 from operator import itemgetter
 import random
+import re
 
 random.seed(9001)
-from random import randint
-import statistics
-import textwrap
-import matplotlib.pyplot as plt
-from typing import Iterator, Dict, List
 
 matplotlib.use("Agg")
 
-__author__ = "Your Name"
+__author__ = "Siann Chalvin"
 __copyright__ = "Universite Paris Diderot"
-__credits__ = ["Your Name"]
+__credits__ = ["Siann Chalvin"]
 __license__ = "GPL"
 __version__ = "1.0.0"
-__maintainer__ = "Your Name"
-__email__ = "your@email.fr"
+__maintainer__ = "Siann Chalvin"
+__email__ = "siann@chalvin.org"
 __status__ = "Developpement"
 
 
@@ -102,7 +103,12 @@ def read_fastq(fastq_file: Path) -> Iterator[str]:
     :param fastq_file: (Path) Path to the fastq file.
     :return: A generator object that iterate the read sequences.
     """
-    pass
+    with open(fastq_file, "r") as f:
+        for line in f:
+            sequence = next(f).strip()
+            next(f)
+            next(f)
+            yield sequence
 
 
 def cut_kmer(read: str, kmer_size: int) -> Iterator[str]:
@@ -111,7 +117,11 @@ def cut_kmer(read: str, kmer_size: int) -> Iterator[str]:
     :param read: (str) Sequence of a read.
     :return: A generator object that provides the kmers (str) of size kmer_size.
     """
-    pass
+    k_over = kmer_size + (len(read) %
+                          kmer_size)  # length of sequence end to remove
+
+    for i in range(0, k_over+1):
+        yield read[i:i+kmer_size]
 
 
 def build_kmer_dict(fastq_file: Path, kmer_size: int) -> Dict[str, int]:
@@ -120,7 +130,15 @@ def build_kmer_dict(fastq_file: Path, kmer_size: int) -> Dict[str, int]:
     :param fastq_file: (str) Path to the fastq file.
     :return: A dictionnary object that identify all kmer occurrences.
     """
-    pass
+    kmer_dict = {}
+    for seq in read_fastq(fastq_file):
+        kmers = cut_kmer(seq, kmer_size)
+        for kmer in kmers:
+            if kmer in kmer_dict:
+                kmer_dict[kmer] = kmer_dict[kmer]+1
+            else:
+                kmer_dict[kmer] = 1
+    return kmer_dict
 
 
 def build_graph(kmer_dict: Dict[str, int]) -> DiGraph:
@@ -129,7 +147,13 @@ def build_graph(kmer_dict: Dict[str, int]) -> DiGraph:
     :param kmer_dict: A dictionnary object that identify all kmer occurrences.
     :return: A directed graph (nx) of all kmer substring and weight (occurrence).
     """
-    pass
+    graph = DiGraph()
+    for seq, w in kmer_dict.items():
+        prefix = seq[:-1]
+        suffix = seq[1:]
+
+        graph.add_edge(prefix, suffix, weight=w)
+    return graph
 
 
 def remove_paths(
@@ -270,9 +294,11 @@ def draw_graph(graph: DiGraph, graphimg_file: Path) -> None:  # pragma: no cover
     :param graphimg_file: (Path) Path to the output file
     """
     fig, ax = plt.subplots()
-    elarge = [(u, v) for (u, v, d) in graph.edges(data=True) if d["weight"] > 3]
+    elarge = [(u, v)
+              for (u, v, d) in graph.edges(data=True) if d["weight"] > 3]
     # print(elarge)
-    esmall = [(u, v) for (u, v, d) in graph.edges(data=True) if d["weight"] <= 3]
+    esmall = [(u, v)
+              for (u, v, d) in graph.edges(data=True) if d["weight"] <= 3]
     # print(elarge)
     # Draw the graph with networkx
     # pos=nx.spring_layout(graph)
