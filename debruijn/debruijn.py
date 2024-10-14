@@ -14,6 +14,7 @@
 """Perform assembly based on debruijn graph."""
 
 from typing import Iterator, Dict, List
+import numpy as np
 import matplotlib.pyplot as plt
 import textwrap
 import statistics
@@ -171,7 +172,16 @@ def remove_paths(
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    for path in path_list:
+        if (delete_entry_node is True) & (delete_sink_node is True):
+            graph.remove_nodes_from(path)
+        elif delete_entry_node is True:
+            graph.remove_nodes_from(path[:-1])
+        elif delete_sink_node is True:
+            graph.remove_nodes_from(path[1:])
+        else:
+            graph.remove_nodes_from(path[1:-1])
+    return graph
 
 
 def select_best_path(
@@ -192,7 +202,27 @@ def select_best_path(
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    if len(weight_avg_list) > 1:
+        stdev_weight = statistics.stdev(weight_avg_list)
+    else:
+        stdev_weight = 0
+
+    if len(weight_avg_list) > 1:
+        stdev_length = statistics.stdev(path_length)
+    else:
+        stdev_length = 0
+
+    if stdev_weight != 0:
+        index = np.array(weight_avg_list).argmax()
+    elif stdev_length != 0:
+        index = np.array(path_length).argmax()
+    else:
+        index = randint(0, len(path_list))
+
+    path_list.pop(index)
+    graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
+
+    return graph
 
 
 def path_average_weight(graph: DiGraph, path: List[str]) -> float:
@@ -215,7 +245,17 @@ def solve_bubble(graph: DiGraph, ancestor_node: str, descendant_node: str) -> Di
     :param descendant_node: (str) A downstream node in the graph
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    path_list = []
+    len_list = []
+    weight_avg_list = []
+    for path in all_simple_paths(graph, ancestor_node, descendant_node):
+        len_path = len(path)
+        path_list.append(path)
+        len_list.append(len_path)
+        avg_weight = path_average_weight(graph, path)
+        weight_avg_list.append(avg_weight)
+    path = select_best_path(graph, path_list, len_list, weight_avg_list)
+    return path
 
 
 def simplify_bubbles(graph: DiGraph) -> DiGraph:
@@ -224,7 +264,22 @@ def simplify_bubbles(graph: DiGraph) -> DiGraph:
     :param graph: (nx.DiGraph) A directed graph object
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    bubble = False
+    for node in graph.nodes():
+        predecessors = list(graph.predecessors(node))
+        if len(predecessors) > 1:
+            for i in range(0, len(predecessors)):
+                for j in range(i+1, len(predecessors)):
+                    ancestor_node = lowest_common_ancestor(
+                        graph, predecessors[i], predecessors[j])
+                    if ancestor_node is not None:
+                        bubble = True
+                        break
+    if bubble is True:
+        print("simplified")
+        graph = simplify_bubbles(solve_bubble(
+            graph, ancestor_node, node))
+    return graph
 
 
 def solve_entry_tips(graph: DiGraph, starting_nodes: List[str]) -> DiGraph:
@@ -234,7 +289,35 @@ def solve_entry_tips(graph: DiGraph, starting_nodes: List[str]) -> DiGraph:
     :param starting_nodes: (list) A list of starting nodes
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    multi_tips = False
+    for node in graph.nodes():
+        predecessors = list(graph.predecessors(node))
+        print(predecessors)
+        tip_predecessors = list(set(predecessors).intersection(starting_nodes))
+        if len(tip_predecessors) > 1:
+            print(1)
+            path_list = []
+            len_list = []
+            weight_avg_list = []
+            paths = [list(all_simple_paths(graph, tip_pred, node))
+                     for tip_pred in tip_predecessors]
+            print(paths)
+            for path in paths:
+                len_path = len(path[0])
+                path_list.append(path[0])
+                len_list.append(len_path)
+                avg_weight = path_average_weight(graph, path[0])
+                weight_avg_list.append(avg_weight)
+            best_path = select_best_path(
+                graph, path_list, len_list, weight_avg_list)
+
+            print(paths)
+            paths.pop(best_path)
+            graph = remove_paths(
+                graph, paths, delete_entry_node=True, delete_sink_node=False)
+            multi_tips = False
+
+    return graph
 
 
 def solve_out_tips(graph: DiGraph, ending_nodes: List[str]) -> DiGraph:
